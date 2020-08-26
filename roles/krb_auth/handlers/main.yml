@@ -1,0 +1,9 @@
+---
+# handlers file for krb_auth
+- name: restart_services
+  service:
+    name: "{{ item }}"
+    state: restarted
+  with_items:
+    - sssd
+    - ntp

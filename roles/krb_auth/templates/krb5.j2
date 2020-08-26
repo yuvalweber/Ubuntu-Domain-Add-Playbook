@@ -1,0 +1,19 @@
+[libdefaults]
+	default_realm = {{domain_name|upper}}
+	dns_lookup_realm = false
+	dns_lookup_kdc = false
+	ticket_lifetime = 24h
+	renew_lifetime = 7d
+	forwardable = true
+[realms]
+	WEBER.COM = {
+		kdc = {{dc_fqdn|lower}}
+		admin_server = {{dc_fqdn|lower}}
+	}
+
+[domain_realm]
+	.{{domain_name|lower}} = {{domain_name|upper}}
+
+[logging]
+	default = FILE:/var/krb5/kdc.log
+	kdc = FILE:/var/krb5/kdc.log

@@ -1,0 +1,115 @@
+---
+# tasks file for krb_auth
+
+- name: install required packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - sssd
+    - oddjob
+    - oddjob-mkhomedir
+    - adcli
+    - samba-common
+    - krb5-user
+    - ldap-utils
+    - libnss-ldap 
+    - policycoreutils
+    - ntp
+    - libnss-sss
+    - libpam-sss
+  become: true
+
+- name: config files
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+  with_items:
+    - { src: resolv.j2, dest: /etc/resolv.conf }
+    - { src: krb5.j2, dest: /etc/krb5.conf }
+    - { src: ntp.j2, dest: /etc/ntp.conf }
+    - { src: nsswitch.j2, dest: /etc/nsswitch.conf}
+    - { src: common-auth.j2, dest: /etc/pam.d/common-auth}
+    - { src: common-password.j2, dest: /etc/pam.d/common-password}
+    - { src: common-session.j2, dest: /etc/pam.d/common-session}
+    - { src: common-account.j2, dest: /etc/pam.d/common-account}
+
+- name: sssd config file
+  template:
+    src: sssd.j2
+    dest: /etc/sssd/sssd.conf
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: setting fact for creating ticket
+  set_fact:
+    computer_name: "{{ ansible_hostname }}"
+    ip_address: "{{ ansible_all_ipv4_addresses }}"
+    random_pass: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
+
+- name: create computer object,ticket and dns record
+  win_shell: |
+          New-ADComputer -Name "{{ computer_name }}" -SAMAccountName "{{ computer_name }}" -path "CN=Computers,DC=WEBER,DC=COM" -enabled $true
+          setspn -A host/{{ computer_name }} {{ computer_name }}
+          ktpass /princ {{ computer_name }}$@{{domain_name|upper}} /out c:\0.keytab /crypto all /ptype KRB5_NT_PRINCIPAL -desonly /mapuser {{domain_name.split(".")[0]|upper}}\{{ computer_name }}$ -setupn +setpass -pass {{random_pass}} +answer
+          ktpass /princ host/{{ computer_name }}@{{domain_name|upper}} /out c:\1.keytab /crypto all /ptype KRB5_NT_PRINCIPAL -desonly -mapuser {{domain_name.split(".")[0]|upper}}\{{ computer_name }}$ +setupn -setpass -pass {{random_pass}} +answer
+          Add-DnsServerResourceRecordA -Name "{{ computer_name }}" -ZoneName {{domain_name|lower}} -AllowUpdateAny -IPv4Address "{{ ip_address[0] }}"
+  
+  delegate_to: "{{dc_ip}}"
+
+- name: copy the keytab file to ansible 
+  fetch:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    flat: yes
+  with_items:
+    - { src: "c:\\0.keytab", dest: /tmp/0.keytab }
+    - { src: "c:\\1.keytab", dest: /tmp/1.keytab }
+  delegate_to: "{{dc_ip}}"
+
+- name: delete keytab files from dc
+  win_shell: |
+    Remove-Item -Path c:\0.keytab -Force
+    Remove-Item -Path c:\1.keytab -Force
+  delegate_to: "{{dc_ip}}"
+
+- name: copy keytab file from ansible to remote machine
+  copy:
+    src: "{{ item }}"
+    dest: "{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  with_items:
+    - /tmp/0.keytab
+    - /tmp/1.keytab
+
+- name: merge keytabs
+  shell: (echo "read_kt /tmp/0.keytab";echo "read_kt /tmp/1.keytab";echo "write_kt /etc/krb5.keytab")|ktutil
+
+  notify:
+    - restart_services
+
+- name: remove keytabs from ansible machine
+  shell: rm -f /tmp/0.keytab /tmp/1.keytab
+  delegate_to: localhost
+
+- name: remove keytab from your machine
+  shell: rm -f /tmp/0.keytab /tmp/1.keytab
+
+- name: make the handler run right now!!
+  meta: flush_handlers
+
+- name: check if the keytab works
+  shell: (klist -ke;kinit -k {{ computer_name }}\$@{{domain_name|upper}}; kinit -k host/{{ computer_name }}@{{domain_name|upper}};/usr/bin/ldapsearch -H ldap://{{dc_fqdn|lower}}/ -Y GSSAPI -N -b "dc={{domain_name.split(".")[0]|lower}},dc={{domain_name.split(".")[1]|lower}}" "(&(objectClass=user)(sAMAccountName=aduser))")
+
+
+  register: output
+
+- name: print the output
+  debug:
+    var: output.stdout

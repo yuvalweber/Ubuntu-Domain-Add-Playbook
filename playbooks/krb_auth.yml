@@ -1,0 +1,4 @@
+- hosts: Linux
+  roles:
+    - krb_auth
+  ignore_errors: yes

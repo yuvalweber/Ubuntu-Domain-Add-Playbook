@@ -1,0 +1,15 @@
+[sssd]
+config_file_version = 2
+domains = {{domain_name|upper}}
+services = nss, pam
+
+[domain/{{domain_name|upper}}]
+
+id_provider = ad
+auth_provider = ad
+access_provider = ad
+ad_server = {{dc_fqdn|lower}}
+ad_gpo_access_control = permissive
+default_shell = /bin/bash
+fallback_homedir = /home/%d/%u
+use_fully_qualified_names = True
