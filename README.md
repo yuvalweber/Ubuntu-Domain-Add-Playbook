@@ -22,7 +22,7 @@
 
 ![alt text](./images/packages.png)
 
-**sssd** --> the sssd provides access to remote identity and authentication providers, that means that it will provide us access to our domain.
+**sssd** --> the sssd provides access to remote identity and authentication providers, that means that it will provide us access to our domain.                  
 **oddjob** --> this package provides access to unprivileged application to accomplish privileged task                                          
 **oddjob-mkhomedir** --> this package will create us an home directory for each domain user who will connect to our machine.                   
 **Adcli** --> normally used to create a computer object of our computer in the active directory, and bring its keytab file(we don’t going to use it because we are going to do this things manually, so for us this package is not very useful, and I will explain later on what is a keytab, but we use it because sssd uses it in order to change the keytab content every 30 days).                                                                                                              
@@ -43,7 +43,7 @@
 
 **resolv.conf** --> contains the dns servers we use(in our case also the dc), and we also use the parameter search <domain name> , so it will add suffix to anything we will ping(for example if we ping for the workstation Ubuntu, it will add Ubuntu.<domain name>).          
 **krb5.conf** --> contains which realm we are going to connect to(our domain name) , and also the name of our key distribution center(our domain controller).       
-**ntp.conf** --> set who our ntp service provider(in our case it is the dc, and it will tell us to synchronize our clock according to the dc).
+**ntp.conf** --> set who our ntp service provider(in our case it is the dc, and it will tell us to synchronize our clock according to the dc).                     
 **nsswitch.conf** --> nss or naming switch system is telling our machine where to look for files of users who wants to authenticate(it also contains where is the groups file, shadow file and more), we add there the sss provider, so when we authenticate to our machine with domain account, it will know to search info about him using the sssd.                                    
 **Common-auth** --> contain information about authentication to our machine, we add there the shared object called pam_sss.so so our machine could authenticate using sssd.                                            
 **Common-password** --> contains information about password policy strength,
