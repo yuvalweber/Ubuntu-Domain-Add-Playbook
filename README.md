@@ -12,12 +12,16 @@
 - [Tests](#tests)
 - [Common Issues](#Common-Issues)
 - [What is Keytab?](#What-is-Keytab?)
+- [Run Example](#run-example)
 
 
 ### Explain about The Process
 
 ## Installation Packages
-1)	The first thing we are doing is installing the required packages in order to add our machine to the domain, the packages are:     
+1)	The first thing we are doing is installing the required packages in order to add our machine to the domain, the packages are:
+
+![alt text](./images/packages.png)
+
 **sssd** --> the sssd provides access to remote identity and authentication providers, that means that it will provide us access to our domain.
 **oddjob** --> this package provides access to unprivileged application to accomplish privileged task                                          
 **oddjob-mkhomedir** --> this package will create us an home directory for each domain user who will connect to our machine.                   
@@ -33,7 +37,10 @@
 
 
 ## Config Files
-2) the second thing we do is to configure the necessary files                                               
+2) the second thing we do is to configure the necessary files:
+
+![alt text](./images/config.png)
+
 **resolv.conf** --> contains the dns servers we use(in our case also the dc), and we also use the parameter search <domain name> , so it will add suffix to anything we will ping(for example if we ping for the workstation Ubuntu, it will add Ubuntu.<domain name>).          
 **krb5.conf** --> contains which realm we are going to connect to(our domain name) , and also the name of our key distribution center(our domain controller).       
 **ntp.conf** --> set who our ntp service provider(in our case it is the dc, and it will tell us to synchronize our clock according to the dc).
@@ -50,35 +57,58 @@ Moreover the 4 files above are under pam, pam is pluggable authentication method
 
 ## Sssd config file
 3) the sssd config file:
+
+![alt text](./images/sssd.png)
+
 In this file we add many configurations about where is our domain controller, we also tell him to use nss and pam as our authentication methods. Moreover, we have their information about where is the home dir of new members and many more.
 
 ## Setting up the facts
 4) here we setting up the facts that we are going to use later.
+
+![alt text](./images/facts.png)
+
 These facts include our machine ip address and its hostname.
 
 ## Creating Computer Object, keytab and dns record
 5) now we are going to create our computer object,our keytab files and we are going to also create a DNS record for it with this tiny script:
+
+![alt text](./images/powershell_script.png)
+
 So the first line is creating a computer account, with his computer account name similar to the computer name(it is required, because, each computer in the active directory has computer account name like the computer name with a $ sign in the end).
 The second line is creating something that called spn (service principal name), it is a unique identifier of a service in order to associate it with a user account (in our case we associate it with the computer user account).
 We create the host spn and we associate it with our computer account.
 The host spn contains some spns inside of him, this is something called spn mapping. It means, that our spn contains some spns inside of him.
 In order to see what our spn mapping contains inside of him we need to open, adsiedit.msc --> configuration partition --> services --> windows NT --> directory services, right click --> and then under spn mappings you will see it. 
+
+![alt text](./images/host_spn.png)
+
 The next step we do is creating 2 keytab files.
 
 ## Transfering Keytabs
 6) now we transfer the 2 keytabs to our machine like this:
 
+![alt text](./images/transfer_keytabs.png)
+
 ## Merging Keytabs
 7) then we are using tool called ktutil in order to merge this 2 keytabs into one file, and also calling and handler in order to restart services responsible for the changes we made.
 We do it like this:
 
+![alt text](./images/ktutil.png)
 
 ## Tests
 now the last thing we did is to check if our keytab is working.
 If it is working fine, we can now authenticate with a Kerberos authentication to our domain.
 We run 3 test:
-The first one is calling the command klist –ke, this is reading the keytab file and checking is content.
-The second test we did is using the command kinit, in order to authenticate to the services, we have in the keytab file, and check if it works.              
+The first one is calling the command 
+```bash 
+klist –ke
+```
+ this is reading the keytab file and checking is content.
+The second test we did is using the command 
+ ```bash
+ kinit
+ ```
+ in order to authenticate to the services, we have in the keytab file, and check if it works.              
 And the third test we do is using the command called ldapsearch, in order to make and ldap query to our domain.
 If all of the 3 tests succeed without any error, it means you can authenticate to your domain freely!! 
 
@@ -86,9 +116,15 @@ If all of the 3 tests succeed without any error, it means you can authenticate t
 ## Common Issues
 1) the first mistake I did was to give all the pam files, and the nsswitczh.conf file permissions of ‘0600’. Because, I did this only root could read the file and not sssd, so when I authenticate to the domain, it didn’t know where to search for my account content (like the group file, password file, etc…), so it showed me that I am authenticating as “no name”.                                                                                                           
 2) the second mistake I did was that I didn’t added the pam_oddjob_mkhomedir.so to the common-session file.
+
+![alt text](./images/oddjob.png)
+
 Because of that, any new member that was connecting to the machine didn’t manage to create its own home directory.
 I added this as a session optional, so if it won’t succeed to make my user a home directory, it won’t make the authentication fail.
-3 ) the last mistake I did was, that because I am using an Ubuntu 16.04 that has a known issue with Kerberos authentication I needed to add an extra line to my sssd.conf file. This line, make my account when it log in, to not try taking any gpos, because of the ubuntu known issue that will make the autentication fail if he will try to pull gpos.                                                                                                                    
+3 ) the last mistake I did was, that because I am using an Ubuntu 16.04 that has a known issue with Kerberos authentication I needed to add an extra line to my sssd.conf file. This line, make my account when it log in, to not try taking any gpos, because of the ubuntu known issue that will make the autentication fail if he will try to pull gpos.
+
+![alt text](./images/gpo.png)
+
 4 ) the last mistake I did was that I gave the sssd.conf file the permission of ‘0644’. This will make the authentication fail because, this is a very important file and restricted, so it only works if only root can read it and have permission of ‘0600’
 
 
@@ -100,3 +136,10 @@ First thing the computer authenticate with the domain controller using a passwor
 In our case we created 2 keytabs, one for the computer account, and one for the host principal, this principal is used in order to allow local logins, ssh logins to the machine using Kerberos authentication.
 We also set the parameter +setspn in the second principal, this is changing the user principal attribute of the computer object to the principal of the host/...
 We did this because if we don’t do this, then it won’t recognize the principal.
+
+
+## Run Example
+```bash
+ansible-playbook krb_auth.yml -i <hosts file> --extra-vars "dc_ip=<dc ip> domain_name=<domain name> dc_fqdn=<dc fully qualified domain name>"
+ansible-playbook krb_auth.yml -i /etc/asnbile/hosts --extra-vars "dc_ip=192.168.10.10 domain_name=weber.com dc_fqdn=weberdc.weber.com"
+```
