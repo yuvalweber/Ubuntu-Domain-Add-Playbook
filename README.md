@@ -134,7 +134,7 @@ so in our case the server need to authenticate, so it can use the password that 
 Because Kerberos work like this:
 First thing the computer authenticate with the domain controller using a password (the symmetric key) and then users can authenticate in front of him.
 In our case we created 2 keytabs, one for the computer account, and one for the host principal, this principal is used in order to allow local logins, ssh logins to the machine using Kerberos authentication.
-We also set the parameter +setspn in the second principal, this is changing the user principal attribute of the computer object to the principal of the host/...
+We also set the parameter +setupn in the second principal, this is changing the user principal attribute of the computer object to the principal of the host/...
 We did this because if we don’t do this, then it won’t recognize the principal.
 
 
