@@ -114,7 +114,7 @@ If all of the 3 tests succeed without any error, it means you can authenticate t
 
 
 ## Common Issues
-1) the first mistake I did was to give all the pam files, and the nsswitczh.conf file permissions of ‘0600’. Because, I did this only root could read the file and not sssd, so when I authenticate to the domain, it didn’t know where to search for my account content (like the group file, password file, etc…), so it showed me that I am authenticating as “no name”.                                                                                                           
+1) the first mistake I did was to give all the pam files, and the nsswitch.conf file permissions of ‘0600’. Because, I did this only root could read the file and not sssd, so when I authenticate to the domain, it didn’t know where to search for my account content (like the group file, password file, etc…), so it showed me that I am authenticating as “no name”.                                                                                                           
 2) the second mistake I did was that I didn’t added the pam_oddjob_mkhomedir.so to the common-session file.
 
 ![alt text](./images/oddjob.png)
