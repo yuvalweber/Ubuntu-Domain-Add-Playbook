@@ -13,6 +13,7 @@
 - [Common Issues](#Common-Issues)
 - [What is Keytab?](#What-is-Keytab?)
 - [Run Example](#run-example)
+- [Author Information](#author-information)
 
 
 ### Explain about The Process
@@ -143,3 +144,7 @@ We did this because if we don’t do this, then it won’t recognize the princip
 ansible-playbook krb_auth.yml -i <hosts file> --extra-vars "dc_ip=<dc ip> domain_name=<domain name> dc_fqdn=<dc fully qualified domain name>"
 ansible-playbook krb_auth.yml -i /etc/asnbile/hosts --extra-vars "dc_ip=192.168.10.10 domain_name=weber.com dc_fqdn=weberdc.weber.com"
 ```
+
+## Author Information
+<b>Yuval Weber, DevOps Engineer</b><br>
+<b>mail: yuval199985@gmail.com</b>
