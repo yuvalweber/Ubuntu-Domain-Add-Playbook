@@ -146,5 +146,5 @@ ansible-playbook krb_auth.yml -i /etc/asnbile/hosts --extra-vars "dc_ip=192.168.
 ```
 
 ## Author Information
-<b>Yuval Weber, DevOps Engineer</b><br>
-<b>mail: yuval199985@gmail.com</b>
+**Yuval Weber, DevOps Engineer**  
+**mail: yuval199985@gmail.com**
